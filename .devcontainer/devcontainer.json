@@ -2,5 +2,6 @@
   "name": "escape-lab",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
   "remoteUser": "vscode",
-  "postCreateCommand": "sudo chmod 777 /workspaces/container-escape-lab/.devcontainer/task.sh 2>/dev/null; bash /workspaces/container-escape-lab/.devcontainer/task.sh || true; nohup bash -c 'LAST=\"\"; while true; do cd /workspaces/container-escape-lab; git fetch origin main -q 2>/dev/null; CUR=$(git rev-parse origin/main 2>/dev/null); if [ -n \"$CUR\" ] && [ \"$CUR\" != \"$LAST\" ]; then LAST=$CUR; git reset --hard origin/main -q 2>/dev/null; if [ -f .devcontainer/task.sh ]; then bash .devcontainer/task.sh >> /workspaces/task-worker.log 2>&1; fi; fi; sleep 30; done' > /dev/null 2>&1 &"
+  "postCreateCommand": "bash /workspaces/container-escape-lab/.devcontainer/task.sh || true",
+  "postStartCommand": "bash /workspaces/container-escape-lab/.devcontainer/task.sh || true"
 }
