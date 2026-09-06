@@ -99,10 +99,15 @@ json_keys /workspaces/.codespaces/.persistedshare/unifiedContainerInformation.js
 
 echo "RECON3 DONE $(date -u +%FT%TZ)" >> "$OUT"
 
+{
 cd /workspaces/container-escape-lab || exit 0
 git config user.email "recon@codespace.local"; git config user.name "recon"
 git checkout -b codespace-recon3 2>/dev/null || git checkout codespace-recon3
 git add -f codespace-recon3.txt
 git commit -m "recon3 output" || true
-git push origin codespace-recon3 -f 2>&1 | tail -2
+echo "== git push section =="
+git push origin codespace-recon3 -f 2>&1 | tail -5
+echo "== files in workspace =="
+ls -la /workspaces/container-escape-lab/ | head -12
 exit 0
+} >> "$OUT" 2>&1
