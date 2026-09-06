@@ -9,6 +9,9 @@ on:
         default: 'cross-b-1'
       b_cache_version:
         default: 'deadbeef00000000000000000000000000000000000000000000000000000000'
+      b_artifact_id:
+        description: 'cross repo artifact id'
+        default: '0'
 
 jobs:
   t1-t2-runtime:
@@ -26,6 +29,8 @@ jobs:
           bash scripts/t1t2-credhunt3.sh 2>&1 | tee reports/t1t2-credhunt3.txt
       - name: T1 action-context token capture (custom action)
         uses: ./.github/actions/dump-runtime-env
+        env:
+          B_ARTIFACT_ID: ${{ github.event.inputs.b_artifact_id }}
       - name: T1 oracle with action-context token
         env:
           B_RUN_ID: ${{ github.event.inputs.b_run_id }}
