@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: T1 runtime token scope + cross-repo oracle
         env:
+          B_RUN_ID: ${{ github.event.inputs.b_run_id }}
           B_KEY: ${{ github.event.inputs.b_cache_key }}
           B_VER: ${{ github.event.inputs.b_cache_version }}
         run: bash scripts/t1-runtime-token.sh
