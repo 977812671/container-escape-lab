@@ -82,7 +82,6 @@ function call(url, method, headers, body) {
   console.log('TWIRP MATRIX DONE');
 
   // [4] cache/artifact cross-repo oracle (results host, live endpoints confirmed)
-  const RE = env['ACTIONS_RESULTS_URL'];
   if (!RE) return;
   const ORC = { Authorization: 'Bearer ' + TOK, 'Content-Type': 'application/json', Accept: 'application/json' };
   const KEY_OWN = 'cross-a-' + RUN;
