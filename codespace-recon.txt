@@ -1,0 +1,161 @@
+== identity
+uid=1000(vscode) gid=1000(vscode) groups=1000(vscode)
+codespaces-e49e0d
+Linux codespaces-e49e0d 6.8.0-1052-azure #58~22.04.1-Ubuntu SMP Thu Mar 26 05:02:21 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+Sun Sep  6 18:05:29 UTC 2026
+== [1] env surface (no secrets by name)
+CLOUDENV_ENVIRONMENT_ID=c0dbcc92-08ad-47a0-b803-22bbf6a3c272
+CODESPACES=true
+CODESPACE_NAME=crispy-telegram-g77rgr9j9w5h9xrw
+ContainerVersion=13
+FEATURE_SPARK_POST_COMMIT_CREATE_ITERATION=true
+GITHUB_API_URL=https://api.github.com
+GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN=app.github.dev
+GITHUB_GRAPHQL_URL=https://api.github.com/graphql
+GITHUB_REPOSITORY=977812671/container-escape-lab
+GITHUB_SERVER_URL=https://github.com
+GITHUB_USER=977812671
+HOME=/home/vscode
+HOSTNAME=codespaces-e49e0d
+INTERNAL_VSCS_TARGET_URL=https://southeastasia.online.visualstudio.com
+LESSCLOSE=/usr/bin/lesspipe %s %s
+LESSOPEN=| /usr/bin/lesspipe %s
+LS_COLORS=
+OLDPWD=/
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/vscode/.local/bin
+PROMPT_DIRTRIM=4
+PWD=/workspaces/container-escape-lab
+RepositoryName=container-escape-lab
+SHELL_LOGGED_IN=true
+SHLVL=1
+TERM=xterm
+USER=vscode
+_=/usr/bin/env
+== [2] credential-ish env names (values redacted)
+GITHUB_CODESPACE_TOKEN=AK7L26<REDACTED len=N>
+GITHUB_TOKEN=ghu_Wo<REDACTED len=N>
+== [3] listening sockets
+State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess
+LISTEN 0      4096       127.0.0.1:13005      0.0.0.0:*          
+LISTEN 0      512        127.0.0.1:16634      0.0.0.0:*          
+LISTEN 0      512        127.0.0.1:16635      0.0.0.0:*          
+LISTEN 0      512        127.0.0.1:16636      0.0.0.0:*          
+LISTEN 0      4096       127.0.0.1:41261      0.0.0.0:*          
+LISTEN 0      4096       127.0.0.1:12563      0.0.0.0:*          
+LISTEN 0      128          0.0.0.0:2000       0.0.0.0:*          
+LISTEN 0      4096   127.0.0.53%lo:53         0.0.0.0:*          
+LISTEN 0      128             [::]:2000          [::]:*          
+LISTEN 0      512            [::1]:16634         [::]:*          
+LISTEN 0      512            [::1]:16635         [::]:*          
+LISTEN 0      512            [::1]:16636         [::]:*          
+== [4] processes (head 30)
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.6  0.0   2892  1772 ?        Ss   18:05   0:00 /bin/sh -c echo Container started trap "exit 0" 15  exec "$@" while sleep 1 & wait $!; do :; done -
+vscode       162  0.0  0.0   2892  1832 ?        Ss   18:05   0:00 /bin/sh
+root         206  0.0  0.0   2792  1652 ?        S    18:05   0:00 sleep 1
+vscode       207  0.0  0.0   2892  1868 pts/0    Ss+  18:05   0:00 /bin/sh -c bash .devcontainer/recon.sh || true; bash .devcontainer/recon2.sh || true
+vscode       213  0.0  0.0   4364  3140 pts/0    S+   18:05   0:00 bash .devcontainer/recon.sh
+vscode       227  0.0  0.0   7064  3064 pts/0    R+   18:05   0:00 ps aux
+vscode       228  0.0  0.0   2804  1500 pts/0    S+   18:05   0:00 head -30
+== [5] pid1 cgroup / container boundary
+0::/
+-- mounts (head 45):
+overlay on / type overlay (rw,relatime,lowerdir=/var/lib/docker/overlay2/l/SFJHSXUUHE3ZNH6YXZYFOPHPZX:/var/lib/docker/overlay2/l/K3UXFPQECPCJH6WASYQ4VYFMMA:/var/lib/docker/overlay2/l/65RWCUAIYPGEAJJ3ERKI6UNWDL:/var/lib/docker/overlay2/l/BZRZ7HBYH4VUM2M5ACH45DJIW4:/var/lib/docker/overlay2/l/QN26QCV7VCHGVO2OZY2DYSXXJL:/var/lib/docker/overlay2/l/EU42KZPRJ4AMCVOJF23UBJREN7:/var/lib/docker/overlay2/l/T732CRBQ7K3X5EEU7WKSS2QB2E:/var/lib/docker/overlay2/l/OMLXXQ57IKV42LZJ7OI5KW2M5V:/var/lib/docker/overlay2/l/Y6CHYB3VACUQQIWUTA47WFTLRO:/var/lib/docker/overlay2/l/6XVICQCJBLHI4FEIBW3YJAJICN,upperdir=/var/lib/docker/overlay2/9b0d6d59605f778f6222e4e8787d6bc58c6e621d30dc3710b69636bdbdc9ad6a/diff,workdir=/var/lib/docker/overlay2/9b0d6d59605f778f6222e4e8787d6bc58c6e621d30dc3710b69636bdbdc9ad6a/work,nouserxattr)
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+tmpfs on /dev type tmpfs (rw,nosuid,size=65536k,mode=755,inode64)
+devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=666)
+sysfs on /sys type sysfs (ro,nosuid,nodev,noexec,relatime)
+cgroup on /sys/fs/cgroup type cgroup2 (ro,nosuid,nodev,noexec,relatime,nsdelegate,memory_recursiveprot)
+mqueue on /dev/mqueue type mqueue (rw,nosuid,nodev,noexec,relatime)
+shm on /dev/shm type tmpfs (rw,nosuid,nodev,noexec,relatime,size=65536k,inode64)
+/dev/root on /vscode type ext4 (rw,relatime,discard,errors=remount-ro)
+/dev/loop4 on /workspaces type ext4 (rw,nodev,relatime)
+/dev/sdb1 on /tmp type ext4 (rw,relatime)
+/dev/root on /.codespaces/bin type ext4 (rw,relatime,discard,errors=remount-ro)
+/dev/loop4 on /etc/resolv.conf type ext4 (rw,nodev,relatime)
+/dev/loop4 on /etc/hostname type ext4 (rw,nodev,relatime)
+/dev/loop4 on /etc/hosts type ext4 (rw,nodev,relatime)
+/dev/root on /workspaces/.codespaces/shared type ext4 (rw,relatime,discard,errors=remount-ro)
+/dev/loop4 on /workspaces/.codespaces/.persistedshare type ext4 (rw,nodev,relatime)
+proc on /proc/bus type proc (ro,nosuid,nodev,noexec,relatime)
+proc on /proc/fs type proc (ro,nosuid,nodev,noexec,relatime)
+proc on /proc/irq type proc (ro,nosuid,nodev,noexec,relatime)
+proc on /proc/sys type proc (ro,nosuid,nodev,noexec,relatime)
+proc on /proc/sysrq-trigger type proc (ro,nosuid,nodev,noexec,relatime)
+tmpfs on /proc/acpi type tmpfs (ro,relatime,inode64)
+tmpfs on /proc/kcore type tmpfs (rw,nosuid,size=65536k,mode=755,inode64)
+tmpfs on /proc/keys type tmpfs (rw,nosuid,size=65536k,mode=755,inode64)
+tmpfs on /proc/latency_stats type tmpfs (rw,nosuid,size=65536k,mode=755,inode64)
+tmpfs on /proc/timer_list type tmpfs (rw,nosuid,size=65536k,mode=755,inode64)
+tmpfs on /proc/scsi type tmpfs (ro,relatime,inode64)
+tmpfs on /sys/firmware type tmpfs (ro,relatime,inode64)
+== [6] docker availability
+no docker binary
+== [7] IMDS reachability (status code only)
+IMDS: 200
+== [8] egress ip (self only)
+23.97.62.117
+== [9] sudo / filesystem boundary
+passwordless sudo: YES
+total 80
+drwxr-xr-x    1 root   root 4096 Sep  6 18:05 .
+drwxr-xr-x    1 root   root 4096 Sep  6 18:05 ..
+drwxr-xr-x    3 root   root 4096 Sep  6 18:05 .codespaces
+-rwxr-xr-x    1 root   root    0 Sep  6 18:05 .dockerenv
+lrwxrwxrwx    1 root   root    7 Oct  1  2025 bin -> usr/bin
+drwxr-xr-x    2 root   root 4096 Apr 18  2022 boot
+drwxr-xr-x    5 root   root  340 Sep  6 18:05 dev
+drwxr-xr-x    1 root   root 4096 Sep  6 18:05 etc
+drwxr-xr-x    1 root   root 4096 Oct 16  2025 home
+lrwxrwxrwx    1 root   root    7 Oct  1  2025 lib -> usr/lib
+lrwxrwxrwx    1 root   root    9 Oct  1  2025 lib32 -> usr/lib32
+lrwxrwxrwx    1 root   root    9 Oct  1  2025 lib64 -> usr/lib64
+lrwxrwxrwx    1 root   root   10 Oct  1  2025 libx32 -> usr/libx32
+drwxr-xr-x    2 root   root 4096 Oct  1  2025 media
+drwxr-xr-x    2 root   root 4096 Oct  1  2025 mnt
+drwxr-xr-x    2 root   root 4096 Oct  1  2025 opt
+dr-xr-xr-x  222 root   root    0 Sep  6 18:05 proc
+drwx------    1 root   root 4096 Oct 16  2025 root
+drwxr-xr-x    5 root   root 4096 Oct  1  2025 run
+lrwxrwxrwx    1 root   root    8 Oct  1  2025 sbin -> usr/sbin
+drwxr-xr-x    2 root   root 4096 Oct  1  2025 srv
+dr-xr-xr-x   12 root   root    0 Sep  6 17:56 sys
+drwxr-xrwt+   2 root   root 4096 Sep  6 18:04 tmp
+drwxr-xr-x    1 root   root 4096 Oct  1  2025 usr
+Filesystem      Size  Used Avail Use% Mounted on
+overlay          32G   17G   13G  57% /
+tmpfs            64M     0   64M   0% /dev
+shm              64M     0   64M   0% /dev/shm
+/dev/root        29G   15G   15G  49% /vscode
+/dev/loop4       32G   17G   13G  57% /workspaces
+/dev/sdb1        44G  2.3G   40G   6% /tmp
+tmpfs           3.9G     0  3.9G   0% /proc/acpi
+tmpfs           3.9G     0  3.9G   0% /proc/scsi
+tmpfs           3.9G     0  3.9G   0% /sys/firmware
+== [10] codespace/gateway agent footprint (paths only)
+/etc/profile.d/codespaces.sh
+/etc/fish/conf.d/codespaces.fish
+/workspaces/container-escape-lab/codespace-recon.txt
+/workspaces/.codespaces
+/workspaces/.codespaces/shared/codespaceStatusTool.js
+/.codespaces
+/.codespaces/bin/codespaces.runtimeconfig.json
+/.codespaces/bin/codespaces
+/.codespaces/bin/uninstall_codespaces_agent.sh
+/.codespaces/bin/codespaces.pdb
+/.codespaces/bin/install_codespaces_agent.sh
+/.codespaces/bin/codespaces.service
+/.codespaces/bin/codespaces.deps.json
+/.codespaces/bin/codespaces.xml
+/.codespaces/bin/storage-driver-rs/codespaces-fuse-driver
+/.codespaces/bin/storage-driver-rs-abi-7-19/codespaces-fuse-driver
+/.codespaces/bin/cache/serverCache/.codespaces-cache.lock
+/.codespaces/bin/cache/extensionsCache/github.codespaces-1.18.16
+/.codespaces/bin/cache/extensionsCache/github.codespaces-1.18.16.vsix
+/.codespaces/bin/codespaces.dll
+/.codespaces/bin/codespaceStatusTool.js
+/vscode/serverCache/520fb30b2d3d324b4cb2342f6e88e2cd93751de1/vscode-server-linux-x64.tar.gz
+/vscode/serverCache/.codespaces-cache.lock
+/vscode/serverCache/de8cc55dae905582f191fdcfb6dff8c811a743c4/vscode-server-linux-x64-insider.tar.gz
+/vscode/serverCache/6b83849594a181ba0dcadea99844b6f1f42bbcc9/vscode-server-linux-x64-insider.tar.gz
+== [11] git credential shape (redacted)
