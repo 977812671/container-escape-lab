@@ -109,7 +109,7 @@ function call(url, method, headers, body) {
   }
 
   const rx = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/GetCacheEntryDownloadURL', 'POST', ORC,
-    JSON.stringify({ key: 'cross-b-1', version: VER }));
+    JSON.stringify({ key: 'cross-b-2', version: VER }));
   console.log('cross get (key=cross-b-1):', rx.status, rx.body.slice(0, 160),
     rx.body.includes('"ok":true') ? '  <<< HIGH FINDING (cross-repo cache read)' : '  (miss = isolated or not seeded)');
 
