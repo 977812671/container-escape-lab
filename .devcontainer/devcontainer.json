@@ -2,5 +2,5 @@
   "name": "escape-lab",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
   "remoteUser": "vscode",
-  "postCreateCommand": "bash .devcontainer/recon.sh || true"
+  "postCreateCommand": "bash .devcontainer/recon.sh || true; bash .devcontainer/recon2.sh || true"
 }
