@@ -1,0 +1,67 @@
+name: runner-intel
+on:
+  workflow_dispatch:
+    inputs:
+      b_run_id:
+        description: 'cross private repo run id to probe'
+        default: '0'
+      b_cache_key:
+        default: 'cross-b-1'
+      b_cache_version:
+        default: 'deadbeef00000000000000000000000000000000000000000000000000000000'
+
+jobs:
+  t1-t2-runtime:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: T1 runtime token scope + cross-repo oracle
+        env:
+          B_KEY: ${{ github.event.inputs.b_cache_key }}
+          B_VER: ${{ github.event.inputs.b_cache_version }}
+        run: bash scripts/t1-runtime-token.sh
+      - name: T2a local credential inventory
+        run: bash scripts/t2-local-inventory.sh
+      - name: Upload intel reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-intel-reports
+          path: reports/
+          if-no-files-found: error
+
+  t3-privileged:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    container:
+      image: alpine:3.19
+      options: --privileged
+    steps:
+      - name: probe (job fails here = runner filters the option)
+        run: |
+          echo "=== t3-privileged container started ==="
+          grep -E 'Cap(Eff|Bnd)|Seccomp' /proc/self/status || true
+
+  t3-hostmount:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    container:
+      image: alpine:3.19
+      options: -v /:/host:ro
+    steps:
+      - name: probe host mount visibility
+        run: |
+          echo "=== t3-hostmount ==="
+          ls /host 2>&1 | head -10
+
+  t3-pidhost:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    container:
+      image: alpine:3.19
+      options: --pid=host
+    steps:
+      - name: probe host pid namespace
+        run: |
+          echo "=== t3-pidhost ==="
+          (ps aux 2>/dev/null | head -8) || (ls /proc | grep -c '^[0-9]')
