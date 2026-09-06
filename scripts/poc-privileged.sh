@@ -36,11 +36,11 @@ MODULE_LICENSE("GPL");
 EOC
 printf 'obj-m += escape_poc.o\n' > "$MODDIR/Makefile"
 if [ -e "/lib/modules/$KVER/build" ]; then
-  if (cd "$MODDIR" && make > make.log 2>&1); then
+  if make -C "/lib/modules/$KVER/build" M="$MODDIR" modules > /tmp/modpoc-make.log 2>&1; then
     echo "module built: $(ls -la "$MODDIR/escape_poc.ko" 2>/dev/null)"
   else
-    echo "(module build FAILED) make.log tail:"
-    tail -20 "$MODDIR/make.log"
+    echo "(module build FAILED) make log tail:"
+    tail -20 /tmp/modpoc-make.log
   fi
 else
   echo "(no kernel build dir under /lib/modules: $(ls /lib/modules/ 2>/dev/null), module PoC will be skipped)"
