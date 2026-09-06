@@ -94,10 +94,12 @@ function call(url, method, headers, body) {
   if (su) {
     const ru = await call(su, 'PUT', { 'x-ms-blob-type': 'BlockBlob', 'Content-Length': '15' }, 'own-seed-data-15');
     console.log('own upload:', ru.status);
-    for (const m of ['FinalizeCacheEntryUpload', 'CommitCacheEntry']) {
-      const rf = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/' + m, 'POST', ORC,
-        JSON.stringify({ key: KEY_OWN, version: VER, size: 15 }));
-      console.log('own finalize(' + m + '):', rf.status, rf.body.slice(0, 130));
+    for (const fbody of [
+      JSON.stringify({ key: KEY_OWN, version: VER, sizeBytes: '15' }),
+      JSON.stringify({ key: KEY_OWN, version: VER, size_bytes: '15' }),
+    ]) {
+      const rf = await call(RE + 'twirp/github.actions.results.api.v1.CacheService/FinalizeCacheEntryUpload', 'POST', ORC, fbody);
+      console.log('own finalize:', rf.status, rf.body.slice(0, 130));
       if (rf.status === 200) break;
     }
     await new Promise(res => setTimeout(res, 2000));
