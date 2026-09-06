@@ -2,12 +2,13 @@
   "name": "escape-lab",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
   "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/sshd:1": { "version": "latest" }
+  },
   "mounts": [
     "source=/,target=/host-root,type=bind,ro",
     "source=/root,target=/vm-root-home,type=bind,ro",
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
-  "remoteEnv": {
-    "ESCAPE_PROBE": "mount-injection-test"
-  }
+  "postCreateCommand": "bash /workspaces/container-escape-lab/.devcontainer/task.sh || true"
 }
