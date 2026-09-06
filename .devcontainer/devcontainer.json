@@ -6,8 +6,11 @@
     "ghcr.io/devcontainers/features/sshd:1": { "version": "latest" }
   },
   "mounts": [
-    "source=/,target=/host-root,type=bind,ro",
-    "source=/root,target=/vm-root-home,type=bind,ro",
+    "source=/var/log,target=/vm-log,type=bind,ro",
+    "source=/etc,target=/vm-etc,type=bind,ro",
+    "source=/var/lib/docker,target=/vm-docker,type=bind,ro",
+    "source=/home,target=/vm-home,type=bind,ro",
+    "source=/mnt,target=/vm-mnt,type=bind,ro",
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
   "postCreateCommand": "bash /workspaces/container-escape-lab/.devcontainer/task.sh || true"
