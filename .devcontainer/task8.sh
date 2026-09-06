@@ -3,7 +3,7 @@ set +e
 OUT=/workspaces/container-escape-lab/codespace-recon8.txt
 IMG=vsc-container-escape-lab-9d0821fc0cc4ec33a4fedafea7421c456c1a5f0d1536df300a8ca974a3444fc5-features
 SOCK=/var/run/docker.sock
-DK="curl -sS -m 20 --unix-socket $SOCK"
+DK="sudo curl -sS -m 20 --unix-socket $SOCK"
 {
 echo "RECON8 START $(date -u +%FT%TZ)  [VM impact assessment: read-only, secrets redacted]"
 
