@@ -16,14 +16,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: T1 runtime token scope + cross-repo oracle
+      - name: T1/T2 credential hunt
         env:
           B_RUN_ID: ${{ github.event.inputs.b_run_id }}
-          B_KEY: ${{ github.event.inputs.b_cache_key }}
-          B_VER: ${{ github.event.inputs.b_cache_version }}
-        run: bash scripts/t1-runtime-token.sh
-      - name: T2a local credential inventory
-        run: bash scripts/t2-local-inventory.sh
+        run: |
+          mkdir -p reports
+          bash scripts/t1t2-credhunt.sh 2>&1 | tee reports/t1t2-credhunt.txt
       - name: Upload intel reports
         uses: actions/upload-artifact@v4
         with:
