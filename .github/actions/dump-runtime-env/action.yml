@@ -1,0 +1,5 @@
+name: 'dump-runtime-env'
+description: 'Dump action-process env for credential hunt (own repo, own runner research)'
+runs:
+  using: 'node20'
+  main: 'main.js'
