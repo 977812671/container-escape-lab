@@ -1,0 +1,31 @@
+name: escape-poc
+
+on:
+  workflow_dispatch:
+
+jobs:
+  poc-privileged:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Privileged escape PoC chain
+        run: bash scripts/poc-privileged.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: poc-privileged-report
+          path: reports/
+          if-no-files-found: error
+
+  poc-k8s:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: kind cluster Pod-to-Node escape surface
+        run: bash scripts/poc-k8s.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: poc-k8s-report
+          path: reports/
+          if-no-files-found: error
