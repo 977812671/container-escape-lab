@@ -1,0 +1,17 @@
+name: artifact-cache-producer
+on: workflow_dispatch
+jobs:
+  produce:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifact-cross
+          path: /etc/hostname
+      - name: Save cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/cache-seed
+          key: cross-repo-probe-key
+      - run: mkdir -p /tmp/cache-seed && echo cache-data > /tmp/cache-seed/data.txt
