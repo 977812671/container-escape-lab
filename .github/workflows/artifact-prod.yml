@@ -1,0 +1,16 @@
+name: artifact-prod
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: upload probe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe-cross
+          path: /etc/hostname
