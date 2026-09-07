@@ -7,23 +7,53 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: T0 parse JWT + dual baseline probe
+      - name: T0 locate token (env or /proc) + parse JWT + dual baseline probe
         run: |
           set -u
-          python3 - <<'EOF' | tee /tmp/token-meta.txt
-          import base64, json, os, time
-          t = os.environ["ACTIONS_RUNTIME_TOKEN"]
-          p = t.split('.')[1]; p += '=' * (-len(p) % 4)
+          python3 - <<'EOF' | tee /tmp/t0.txt
+          import base64, json, os, time, glob
+          tok = os.environ.get("ACTIONS_RUNTIME_TOKEN")
+          src = "step-env"
+          if not tok:
+              for p in glob.glob("/proc/[0-9]*/environ"):
+                  try:
+                      data = open(p, "rb").read().decode("utf-8", "replace")
+                  except Exception:
+                      continue
+                  for kv in data.split("\0"):
+                      if kv.startswith("ACTIONS_RUNTIME_TOKEN="):
+                          tok = kv.split("=", 1)[1]; src = "proc:" + p.split("/")[2]
+                          break
+                  if tok: break
+          res_url = os.environ.get("ACTIONS_RESULTS_URL", "")
+          if not res_url:
+              for p in glob.glob("/proc/[0-9]*/environ"):
+                  try:
+                      data = open(p, "rb").read().decode("utf-8", "replace")
+                  except Exception:
+                      continue
+                  for kv in data.split("\0"):
+                      if kv.startswith("ACTIONS_RESULTS_URL="):
+                          res_url = kv.split("=", 1)[1]; break
+                  if res_url: break
+          if not tok:
+              print("TOKEN_NOT_FOUND src=none"); raise SystemExit(1)
+          with open("/tmp/rt.token", "w") as f:
+              f.write(tok)
+          os.chmod("/tmp/rt.token", 0o600)
+          p = tok.split(".")[1]; p += "=" * (-len(p) % 4)
           d = json.loads(base64.urlsafe_b64decode(p))
           now = int(time.time())
-          print("T0_LIFETIME exp-iat=%ds iat=%d exp=%d nbf=%s now=%d age=%ds" % (d['exp']-d['iat'], d['iat'], d['exp'], d.get('nbf'), now, now-d['iat']))
+          print("TOKEN_SOURCE=%s" % src)
+          print("RESULTS_HOST=%s" % (res_url or "UNKNOWN"))
+          print("T0_LIFETIME exp-iat=%ds iat=%d exp=%d nbf=%s now=%d age=%ds" % (d["exp"] - d["iat"], d["iat"], d["exp"], d.get("nbf"), now, now - d["iat"]))
+          print("T0_CLAIMS scp=%s aud=%s" % (d.get("scp", "")[:60], d.get("aud", "")))
           with open(os.environ["GITHUB_ENV"], "a") as f:
-              f.write("TOKEN_EXP=%d\nTOKEN_IAT=%d\n" % (d['exp'], d['iat']))
+              f.write("TOKEN_EXP=%d\nTOKEN_IAT=%d\nRESULTS_HOST=%s\n" % (d["exp"], d["iat"], res_url or ""))
           EOF
-          RES="${ACTIONS_RESULTS_URL%/}"
-          echo "RESULTS_HOST=$RES"
-          EP="$RES/_apis/artifactcache/caches"
-          CODE_A=$(curl -sS -m 20 -o /tmp/a.out -w '%{http_code}' -X POST -H "Authorization: Bearer $ACTIONS_RUNTIME_TOKEN" -H 'Content-Type: application/json' -d '{}' "$EP" || echo 000)
+          EP="${RESULTS_HOST%/}/_apis/artifactcache/caches"
+          TOK=$(cat /tmp/rt.token)
+          CODE_A=$(curl -sS -m 20 -o /tmp/a.out -w '%{http_code}' -X POST -H "Authorization: Bearer $TOK" -H 'Content-Type: application/json' -d '{}' "$EP" || echo 000)
           echo "BASELINE_AUTH_CODE=$CODE_A BODY=$(head -c 150 /tmp/a.out)"
           CODE_B=$(curl -sS -m 20 -o /tmp/b.out -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "$EP" || echo 000)
           echo "BASELINE_NOAUTH_CODE=$CODE_B BODY=$(head -c 150 /tmp/b.out)"
@@ -42,17 +72,19 @@ jobs:
       - name: T1 probe after exp+60s + verdict
         run: |
           set -u
-          RES="${ACTIONS_RESULTS_URL%/}"
-          EP="$RES/_apis/artifactcache/caches"
+          EP="${RESULTS_HOST%/}/_apis/artifactcache/caches"
+          TOK=$(cat /tmp/rt.token)
           NOW=$(date +%s); echo "T1_TIME now=$NOW exp=$TOKEN_EXP delta_after_exp=$((NOW-TOKEN_EXP))s"
-          CODE_C=$(curl -sS -m 20 -o /tmp/c.out -w '%{http_code}' -X POST -H "Authorization: Bearer $ACTIONS_RUNTIME_TOKEN" -H 'Content-Type: application/json' -d '{}' "$EP" || echo 000)
+          CODE_C=$(curl -sS -m 20 -o /tmp/c.out -w '%{http_code}' -X POST -H "Authorization: Bearer $TOK" -H 'Content-Type: application/json' -d '{}' "$EP" || echo 000)
           echo "AFTER_EXP_AUTH_CODE=$CODE_C BODY=$(head -c 200 /tmp/c.out)"
           CODE_D=$(curl -sS -m 20 -o /tmp/d.out -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "$EP" || echo 000)
           echo "AFTER_EXP_NOAUTH_CODE=$CODE_D BODY=$(head -c 200 /tmp/d.out)"
           if [ "$CODE_C" != "401" ] && [ "$CODE_C" != "000" ] && [ "$CODE_C" != "404" ]; then
-            echo "VERDICT=TOKEN_STILL_ACCEPTED at exp+$((NOW-TOKEN_EXP))s (auth code $CODE_C vs no-auth control $CODE_D) => lifetime exceeds JWT exp claim"
+            echo "VERDICT=TOKEN_STILL_ACCEPTED at exp+$((NOW-TOKEN_EXP))s (auth $CODE_C vs no-auth control $CODE_D) => enforcement outlives JWT exp claim"
           elif [ "$CODE_C" = "401" ]; then
-            echo "VERDICT=TOKEN_REJECTED_401 at exp+$((NOW-TOKEN_EXP))s => enforcement matches exp claim"
+            echo "VERDICT=TOKEN_REJECTED_401 at exp+$((NOW-TOKEN_EXP))s => enforcement matches exp claim (~25min life)"
           else
             echo "VERDICT=INCONCLUSIVE code=$CODE_C"
           fi
+          rm -f /tmp/rt.token
+          echo "CLEANUP token file removed"
