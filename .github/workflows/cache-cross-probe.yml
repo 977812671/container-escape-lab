@@ -1,0 +1,62 @@
+name: cache-cross-probe
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "save | restore-exact | restore-prefix"
+        required: true
+        default: "save"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: restore-exact
+        id: rex
+        if: github.event.inputs.mode == 'restore-exact'
+        uses: actions/cache/restore@v4
+        with:
+          key: cross-probe-key
+          path: /tmp/cs
+
+      - name: restore-prefix
+        id: rpx
+        if: github.event.inputs.mode == 'restore-prefix'
+        uses: actions/cache/restore@v4
+        with:
+          key: cross-probe-test
+          restore-keys: |
+            cross-probe-
+          path: /tmp/cs
+
+      - name: verdict
+        if: github.event.inputs.mode != 'save'
+        run: |
+          echo "MODE=${{ github.event.inputs.mode }}"
+          if [ -f /tmp/cs ]; then
+            echo "FILE_PRESENT=yes size=$(stat -c%s /tmp/cs) sha256=$(sha256sum /tmp/cs | cut -d' ' -f1)"
+            echo "CONTENT_BEGIN"
+            cat /tmp/cs
+            echo "CONTENT_END"
+          else
+            echo "FILE_PRESENT=no (cache MISS - nothing restored)"
+          fi
+          echo "rex.cache-hit=${{ steps.rex.outputs.cache-hit }}"
+          echo "rex.cache-primary-key=${{ steps.rex.outputs.cache-primary-key }}"
+          echo "rex.cache-matched-key=${{ steps.rex.outputs.cache-matched-key }}"
+          echo "rpx.cache-hit=${{ steps.rpx.outputs.cache-hit }}"
+          echo "rpx.cache-primary-key=${{ steps.rpx.outputs.cache-primary-key }}"
+          echo "rpx.cache-matched-key=${{ steps.rpx.outputs.cache-matched-key }}"
+
+      - name: write-marker
+        if: github.event.inputs.mode == 'save'
+        run: |
+          { echo "MARKER=A-repo-$(date -u +%Y%m%dT%H%M%SZ)-repo=$GITHUB_REPOSITORY-run=$GITHUB_RUN_ID"; head -c 1000 /dev/zero | tr '\0' 'A'; echo; } > /tmp/cs
+          echo "marker written: $(stat -c%s /tmp/cs) bytes"
+
+      - name: save
+        if: github.event.inputs.mode == 'save'
+        uses: actions/cache@v4
+        with:
+          key: cross-probe-key
+          path: /tmp/cs
