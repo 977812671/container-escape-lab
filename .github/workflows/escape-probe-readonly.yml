@@ -1,0 +1,17 @@
+name: escape-probe-readonly
+# 授权渗透测试（自有仓库）：runner 容器边界只读探测 — 不创建/修改/删除任何容器
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  boundary:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - name: Runner boundary READ-ONLY probe
+        if: github.event_name == 'issues'
+        run: |
+          echo "=== BOUNDARY PROBE START ==="
+          echo "title: ${{ github.event.issue.title }}"
+          echo "=== END ==="
